@@ -1,0 +1,76 @@
+# Default configuration for landslide semantic segmentation
+# Override via: python train.py --config configs/default.yaml --model lsformer
+
+# ── Dataset ──────────────────────────────────────────────────────────────────
+dataset:
+  image_dir:    ./data/images       # RGB input images
+  mask_dir:     ./data/masks        # Integer-label PNG masks
+  img_suffix:   .jpg
+  mask_suffix:  .png
+  num_classes:  2                   # 0=background, 1=landslide
+  ignore_index: 255
+  crop_size:    512                 # Training random-crop size
+  val_size:     512
+  train_ratio:  0.70
+  val_ratio:    0.15
+  split_file:   null                # Path to JSON split file (null = auto-split)
+  use_elastic:  true
+  use_cutmix:   false
+  seed:         42
+
+  # Class names (for visualisation)
+  class_names:
+    - background
+    - landslide
+
+# ── Model ─────────────────────────────────────────────────────────────────────
+model:
+  name:         lsformer            # lsformer | unet | deeplabv3plus | segformer | hrnet
+  num_classes:  2
+  pretrained:   true
+  in_channels:  3
+
+# ── Loss ──────────────────────────────────────────────────────────────────────
+loss:
+  w_ce:          1.0
+  w_dice:        0.5
+  w_focal:       0.5
+  w_aux:         0.4
+  w_bnd:         0.3
+  label_smoothing: 0.05
+  use_focal:     true
+  use_class_weights: true           # Auto-compute inverse-frequency weights
+
+# ── Optimiser ─────────────────────────────────────────────────────────────────
+optimizer:
+  type:          adamw              # adamw | sgd
+  lr:            6.0e-5
+  weight_decay:  0.01
+  betas:         [0.9, 0.999]
+  backbone_lr_multiplier: 0.1      # backbone gets 10x lower LR
+
+# ── LR Scheduler ──────────────────────────────────────────────────────────────
+scheduler:
+  type:          poly               # poly | cosine | onecycle
+  power:         1.0               # poly only
+  min_lr:        1.0e-6            # cosine only
+  warmup_epochs: 5                 # linear warmup
+
+# ── Training ──────────────────────────────────────────────────────────────────
+train:
+  epochs:        100
+  batch_size:    8
+  val_batch:     4
+  num_workers:   4
+  pin_memory:    true
+  grad_clip:     1.0
+  eval_interval: 1
+  save_interval: 10
+  amp:           true              # Automatic Mixed Precision
+  ema:           false             # Exponential Moving Average
+
+# ── Output ────────────────────────────────────────────────────────────────────
+output:
+  save_dir:      ./work_dirs/lsformer
+  log_interval:  20
+  save_pred_grid: true             # Save qualitative prediction grids

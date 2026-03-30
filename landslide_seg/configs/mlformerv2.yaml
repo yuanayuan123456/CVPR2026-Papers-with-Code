@@ -1,0 +1,47 @@
+# MLFormerV2 configuration
+# Improved model inspired by CVPR 2025 semantic segmentation papers
+
+model:
+  name: mlformerv2
+  num_classes: 2
+  pretrained: true
+  in_channels: 3
+  window_size: 8          # LocalVSS window size (LocalMamba-inspired)
+  num_prototypes: 8       # PGCSA prototype count K
+  num_ibr_points: 196     # IBRHead refinement points N (≈14×14)
+
+data:
+  root: data/landslide
+  img_size: 512
+  batch_size: 8
+  num_workers: 4
+  train_aug: true
+  val_aug: false
+  class_names: ["background", "landslide"]
+
+train:
+  epochs: 100
+  optimizer: adamw
+  lr: 6.0e-5            # Slightly lower LR for the heavier V2 model
+  weight_decay: 0.01
+  scheduler: cosine
+  warmup_epochs: 5
+  clip_grad_norm: 1.0
+  amp: true             # Mixed-precision training recommended
+
+loss:
+  w_ce: 1.0
+  w_dice: 0.5
+  w_focal: 0.5
+  w_aux: 0.4
+  w_bnd: 0.3
+  label_smoothing: 0.05
+  use_focal: true
+
+eval:
+  metrics: [miou, dice, oa, kappa, precision, recall]
+  save_best: miou
+
+output:
+  save_dir: runs/mlformerv2
+  log_interval: 10
