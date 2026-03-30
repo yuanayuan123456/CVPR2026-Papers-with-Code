@@ -89,7 +89,7 @@ class UNet(nn.Module):
     Biomedical Image Segmentation. MICCAI 2015.
     """
 
-    def __init__(self, num_classes: int = 2, in_channels: int = 3) -> None:
+    def __init__(self, num_classes: int = 2, in_channels: int = 3, **kwargs) -> None:
         super().__init__()
         self.encoder = UNetEncoder(in_channels)
         self.decoder = UNetDecoder(num_classes)
@@ -345,7 +345,7 @@ class SegFormer(nn.Module):
     Segmentation with Transformers. NeurIPS 2021.
     """
 
-    def __init__(self, num_classes: int = 2, variant: str = "b2") -> None:
+    def __init__(self, num_classes: int = 2, variant: str = "b2", **kwargs) -> None:
         super().__init__()
         self.encoder = MiTEncoder(variant)
         in_chs = [64, 128, 320, 512]
@@ -374,34 +374,52 @@ class HRModule(nn.Module):
             ]) for c in channels
         ])
         n = len(channels)
-        self.fuse = nn.ModuleList([
-            nn.ModuleList([
-                nn.Identity() if i == j
-                else (ConvBNReLU(channels[j], channels[i], k=1, padding=0)
-                      if j < i
-                      else nn.Sequential(
-                          *[nn.Sequential(ConvBNReLU(channels[j], channels[j]),
-                                          nn.Conv2d(channels[j], channels[i], 3, 2, 1, bias=False),
-                                          nn.BatchNorm2d(channels[i]))
-                            for _ in range(i - j)],
-                          nn.ReLU(inplace=True)
-                      ))
-                for j in range(n)
-            ]) for i in range(n)
-        ])
+        # fuse[i][j]: project branch-j features to branch-i channels.
+        # Convention: lower index = higher resolution (fewer channels).
+        #   j < i  →  j is higher-res; need to DOWNsample j → i (strided conv chain)
+        #   j > i  →  j is lower-res;  need to change channels only (spatial
+        #             upsampling is done with F.interpolate in forward)
+        fuse_rows = []
+        for i in range(n):
+            row = []
+            for j in range(n):
+                if i == j:
+                    row.append(nn.Identity())
+                elif j > i:
+                    # lower-res j → higher-res i: 1×1 conv to change channels
+                    row.append(ConvBNReLU(channels[j], channels[i], k=1, padding=0))
+                else:
+                    # higher-res j → lower-res i: chain of (i-j) stride-2 convs
+                    layers: list = []
+                    in_c = channels[j]
+                    for step in range(i - j):
+                        out_c = channels[i] if step == (i - j - 1) else channels[j + step + 1]
+                        layers += [
+                            nn.Conv2d(in_c, out_c, 3, stride=2, padding=1, bias=False),
+                            nn.BatchNorm2d(out_c),
+                            nn.ReLU(inplace=True),
+                        ]
+                        in_c = out_c
+                    row.append(nn.Sequential(*layers))
+            fuse_rows.append(nn.ModuleList(row))
+        self.fuse = nn.ModuleList(fuse_rows)
 
     def forward(self, x_list: List[torch.Tensor]) -> List[torch.Tensor]:
         br = [self.branches[i](x_list[i]) for i in range(len(x_list))]
         outs = []
         for i in range(len(x_list)):
-            s = 0
-            for j, bfeat in enumerate(br):
-                f = self.fuse[i][j](bfeat)
-                if i != j:
+            y = br[i]
+            for j in range(len(x_list)):
+                if j == i:
+                    continue
+                f = self.fuse[i][j](br[j])
+                if j > i:
+                    # lower-res → higher-res: upsample spatially
                     f = F.interpolate(f, br[i].shape[-2:],
                                       mode="bilinear", align_corners=False)
-                s = s + f
-            outs.append(F.relu(s, inplace=True))
+                # j < i case is already spatially downsampled by the conv chain
+                y = y + f
+            outs.append(F.relu(y, inplace=True))
         return outs
 
 
@@ -412,7 +430,7 @@ class HRNetSeg(nn.Module):
     Visual Recognition. TPAMI 2020.
     """
 
-    def __init__(self, num_classes: int = 2) -> None:
+    def __init__(self, num_classes: int = 2, **kwargs) -> None:
         super().__init__()
         # Stem: stride-2 twice → 1/4
         self.stem = nn.Sequential(

@@ -101,8 +101,8 @@ def main():
         description="Run single-image or batch inference"
     )
     parser.add_argument("--model",      required=True,
-                        choices=["lsformer", "unet", "deeplabv3plus",
-                                 "segformer", "hrnet"])
+                        choices=["mlformer", "lsformer", "unet",
+                                 "deeplabv3plus", "segformer", "hrnet"])
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--config",     default="configs/default.yaml")
     parser.add_argument("--device",     default="cuda")

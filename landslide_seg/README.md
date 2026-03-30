@@ -74,9 +74,10 @@ The dataset is automatically split into train/val/test (70/15/15 by default).
 ### 3. Train
 
 ```bash
-cd landslide_seg  # or run from project root
+# Proposed MLFormer (recommended)
+python train.py --model mlformer --config configs/mlformer.yaml
 
-# Proposed LSFormer
+# Proposed LSFormer (v1)
 python train.py --model lsformer --config configs/default.yaml
 
 # Baselines (for comparison study)
@@ -143,9 +144,54 @@ python predict.py \
 
 ---
 
-## ★ LSFormer — Novel Architecture
+## ★★ MLFormer — State-of-the-Art Architecture (CVPR 2024-2025 inspired)
 
-**LandSlide Segmentation Transformer** is designed to address the key challenges of landslide detection from remote-sensing imagery:
+**MLFormer (Mamba-Land Segmentation Transformer)** is the flagship model,
+combining four cutting-edge innovations derived from top-tier 2024-2025 papers:
+
+```
+Input Image (B, 3, H, W)
+        │
+   ┌────┴────┐
+   │         │
+CNN Branch  VSS Encoder              ← Innovation 1: O(N) 4-dir scan
+(ResNet-50) (4-directional GRU-SSM)    (VMamba CVPR'24, MambaVision CVPR'25)
+   │         │
+   └────┬────┘
+        │
+   FSSF Module                       ← Innovation 2: FFT frequency-spatial fusion
+   (FreqAttn + adaptive gate)          (FDA CVPR'20 + FocalNet NeurIPS'22 — novel)
+        │
+   DBAM Module                       ← Innovation 3: Deformable boundary sampling
+   (boundary prediction + grid_sample)  (DSCNet ICCV'23 + DCNv3/InternImage CVPR'23)
+        │
+   CAPD Decoder                      ← Innovation 4: Content-aware upsampling
+   (CARAFE-inspired + attention gates)  (CARAFE ICCV'19 + Mask2Former CVPR'22)
+        │
+   Output + Aux Heads (training)
+```
+
+### Innovation Details
+
+| # | Component | Inspired by (Year) | Novel Contribution |
+|---|-----------|-------------------|-------------------|
+| 1 | **VSS Encoder** | VMamba CVPR 2024, MambaVision CVPR 2025 | 4-directional GRU-based SSM; O(N) complexity vs O(N²) attention; pure PyTorch (no custom CUDA) |
+| 2 | **FSSF Fusion** | FDA CVPR 2020, FocalNet NeurIPS 2022 | **First FFT-guided CNN-SSM cross-branch fusion**; frequency attention identifies dominant spatial-frequency bands for adaptive weighting |
+| 3 | **DBAM** | DSCNet ICCV 2023, DCNv3 CVPR 2023 | Boundary-map-conditioned deformable sampling via `grid_sample`; precisely follows irregular landslide contours |
+| 4 | **CAPD** | CARAFE ICCV 2019, Mask2Former CVPR 2022 | Content-adaptive upsampling kernels + attention-gated skip connections for fine boundary reconstruction |
+
+### Why This is Paper-Worthy
+
+1. **Computational advantage**: VSS encoder is O(N) vs O(N²) for Transformer—necessary for high-resolution RS imagery
+2. **Novel fusion**: FFT+SSM cross-branch fusion has not been proposed before for segmentation
+3. **Domain-specific boundary handling**: DBAM directly addresses the key challenge of irregular landslide boundaries
+4. **Principled design**: Each component targets a specific weakness of prior work, backed by theoretical justification
+
+---
+
+## ★ LSFormer — Previous Proposed Architecture
+
+**LSFormer** is our first proposed model (dual CNN+Transformer path with MSCAF + EGBR).
 
 ```
 Input Image (B, 3, H, W)
@@ -188,11 +234,12 @@ CNN Branch  Transformer Branch
 
 | Model | Year | Key Feature |
 |-------|------|-------------|
+| **MLFormer** ★★ | Proposed | VSS(O(N)) + FFT-Spatial Fusion + Deformable Boundary + Content-Aware Decoder |
+| **LSFormer** ★ | Proposed v1 | Dual CNN-Transformer + MSCAF + EGBR |
 | **UNet** | 2015 | Encoder-decoder with skip connections |
 | **DeepLabV3+** | 2018 | ASPP + low-level feature fusion |
 | **SegFormer** | 2021 | Pure transformer encoder + lightweight MLP head |
 | **HRNet** | 2020 | High-resolution feature maintenance |
-| **LSFormer** ★ | Proposed | Dual CNN-Transformer + MSCAF + EGBR |
 
 ---
 

@@ -268,7 +268,8 @@ def main():
         description="Train a landslide segmentation model"
     )
     parser.add_argument("--model",  default=None,
-        choices=["lsformer", "unet", "deeplabv3plus", "segformer", "hrnet"],
+        choices=["mlformer", "lsformer", "unet", "deeplabv3plus",
+                 "segformer", "hrnet"],
         help="Model architecture to train")
     parser.add_argument("--config", default="configs/default.yaml",
         help="Path to YAML configuration file")

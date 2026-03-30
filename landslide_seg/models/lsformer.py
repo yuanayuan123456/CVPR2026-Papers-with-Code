@@ -499,7 +499,9 @@ class LSFormer(nn.Module):
 
     def __init__(self, num_classes: int = 2,
                  pretrained_cnn: bool = True,
+                 pretrained: bool = True,
                  in_channels: int = 3) -> None:
+        pretrained_cnn = pretrained_cnn and pretrained
         super().__init__()
 
         # ── CNN Branch (ResNet-50) ─────────────────────────────────────────

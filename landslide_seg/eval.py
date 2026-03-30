@@ -301,8 +301,8 @@ def main():
     # Single model evaluation
     single = sub.add_parser("single", help="Evaluate one model")
     single.add_argument("--model",      required=True,
-                        choices=["lsformer", "unet", "deeplabv3plus",
-                                 "segformer", "hrnet"])
+                        choices=["mlformer", "lsformer", "unet",
+                                 "deeplabv3plus", "segformer", "hrnet"])
     single.add_argument("--checkpoint", required=True)
 
     # Multi-model comparison

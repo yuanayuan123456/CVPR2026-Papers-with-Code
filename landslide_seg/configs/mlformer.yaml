@@ -1,9 +1,5 @@
-# Comparison experiment configs — run one model at a time:
-#   python train.py --config configs/comparison.yaml --model unet
-#   python train.py --config configs/comparison.yaml --model deeplabv3plus
-#   python train.py --config configs/comparison.yaml --model segformer
-#   python train.py --config configs/comparison.yaml --model hrnet
-#   python train.py --config configs/comparison.yaml --model lsformer
+# MLFormer configuration — optimised for the novel model
+# Usage: python train.py --model mlformer --config configs/mlformer.yaml
 
 dataset:
   image_dir:    ./data/images
@@ -17,44 +13,44 @@ dataset:
   train_ratio:  0.70
   val_ratio:    0.15
   split_file:   null
-  use_elastic:  true
-  use_cutmix:   false
+  use_elastic:  true    # elastic deformation helps with landslide shape variety
+  use_cutmix:   true    # CutMix reduces overfitting on small datasets
   seed:         42
   class_names:
     - background
     - landslide
 
 model:
-  name:         mlformer            # OVERRIDE via --model flag
+  name:         mlformer
   num_classes:  2
-  pretrained:   true
+  pretrained:   true    # ImageNet ResNet-50 for CNN branch
   in_channels:  3
 
 loss:
   w_ce:          1.0
-  w_dice:        0.5
+  w_dice:        0.6    # higher Dice weight since class imbalance is severe
   w_focal:       0.5
-  w_aux:         0.4
-  w_bnd:         0.3
+  w_aux:         0.4    # deep supervision
+  w_bnd:         0.4    # higher boundary weight since DBAM uses it
   label_smoothing: 0.05
   use_focal:     true
   use_class_weights: true
 
 optimizer:
   type:          adamw
-  lr:            6.0e-5
+  lr:            4.0e-5  # slightly lower for VSS branch stability
   weight_decay:  0.01
   betas:         [0.9, 0.999]
   backbone_lr_multiplier: 0.1
 
 scheduler:
   type:          poly
-  power:         1.0
+  power:         0.9
   min_lr:        1.0e-6
   warmup_epochs: 5
 
 train:
-  epochs:        100
+  epochs:        120     # longer training for the more complex model
   batch_size:    8
   val_batch:     4
   num_workers:   4
@@ -65,6 +61,6 @@ train:
   amp:           true
 
 output:
-  save_dir:      ./work_dirs/comparison
+  save_dir:      ./work_dirs/mlformer
   log_interval:  20
   save_pred_grid: true

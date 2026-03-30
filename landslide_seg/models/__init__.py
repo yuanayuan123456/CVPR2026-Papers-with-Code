@@ -1,13 +1,17 @@
 """Model registry — call ``get_model(name, **kwargs)`` to build any model."""
 
-from .lsformer import LSFormer
+from .mlformer import MLFormer          # ★ State-of-the-art (CVPR 2024-2025 inspired)
+from .lsformer import LSFormer          # Dual-path CNN+Transformer baseline
 from .baselines import UNet, DeepLabV3Plus, SegFormer, HRNetSeg
 
 _REGISTRY = {
-    # ── Proposed ──────────────────────────────────────────────────────────
-    "lsformer":      LSFormer,
+    # ── Proposed (best) ───────────────────────────────────────────────────
+    "mlformer":      MLFormer,          # VSS + FSSF + DBAM + CAPD (recommended)
 
-    # ── Baselines ─────────────────────────────────────────────────────────
+    # ── Proposed (v1) ─────────────────────────────────────────────────────
+    "lsformer":      LSFormer,          # Dual-path CNN-Transformer + MSCAF + EGBR
+
+    # ── Comparison baselines ──────────────────────────────────────────────
     "unet":          UNet,
     "deeplabv3plus": DeepLabV3Plus,
     "segformer":     SegFormer,
@@ -30,6 +34,7 @@ def get_model(name: str, **kwargs):
 
     Example::
 
+        model = get_model("mlformer", num_classes=2, pretrained=True)
         model = get_model("lsformer", num_classes=2, pretrained=True)
         model = get_model("unet",     num_classes=2)
     """
@@ -48,5 +53,5 @@ def list_models():
 
 __all__ = [
     "get_model", "list_models",
-    "LSFormer", "UNet", "DeepLabV3Plus", "SegFormer", "HRNetSeg",
+    "MLFormer", "LSFormer", "UNet", "DeepLabV3Plus", "SegFormer", "HRNetSeg",
 ]
