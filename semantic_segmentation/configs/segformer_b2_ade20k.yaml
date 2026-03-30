@@ -1,0 +1,39 @@
+# SegFormer-B2 on ADE20K
+dataset:
+  name: ade20k
+  root: /data/ade20k
+  num_classes: 150
+  ignore_index: 255
+  crop_size: 512
+  val_size: 512
+
+model:
+  backbone: mit_b2
+  head: segformer
+  channels: 256
+  aux_head: false
+
+loss:
+  use_ohem: false
+  use_dice: false
+
+optimizer:
+  type: adamw
+  lr: 6.0e-5
+  weight_decay: 0.01
+
+scheduler:
+  type: poly
+  power: 1.0
+
+train:
+  epochs: 160
+  batch_size: 8
+  num_workers: 4
+  amp: true
+  eval_interval: 5
+  save_interval: 10
+
+output:
+  save_dir: ./work_dirs/ade20k_mit_b2_segformer
+  log_interval: 50

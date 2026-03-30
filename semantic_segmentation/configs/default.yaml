@@ -1,0 +1,61 @@
+# Default configuration for semantic segmentation training
+
+# ── Dataset ─────────────────────────────────────────────────────────────────
+dataset:
+  name: cityscapes           # cityscapes | ade20k | voc
+  root: /data/cityscapes
+  num_classes: 19
+  ignore_index: 255
+  crop_size: 512
+  scales: [0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0]
+  val_size: 512
+
+# ── Model ────────────────────────────────────────────────────────────────────
+model:
+  backbone: resnet50         # resnet{18,34,50,101,152} | mit_b{0..5}
+  head: uper                 # uper | segformer
+  channels: 256
+  aux_head: true
+  aux_channels: 256
+  backbone_kwargs:
+    pretrained: null
+    dilations: [1, 1, 2, 4]
+
+# ── Loss ─────────────────────────────────────────────────────────────────────
+loss:
+  use_ohem: false
+  use_dice: false
+  aux_weight: 0.4
+  dice_weight: 0.5
+
+# ── Optimizer ────────────────────────────────────────────────────────────────
+optimizer:
+  type: sgd                  # sgd | adamw
+  lr: 0.01
+  weight_decay: 5.0e-4
+  momentum: 0.9              # SGD only
+  nesterov: true             # SGD only
+
+# ── LR Scheduler ─────────────────────────────────────────────────────────────
+scheduler:
+  type: poly                 # poly | cosine | step
+  power: 0.9                 # poly only
+  min_lr: 1.0e-5             # cosine only
+  step_size: 30              # step only
+  gamma: 0.1                 # step only
+
+# ── Training ─────────────────────────────────────────────────────────────────
+train:
+  epochs: 160
+  batch_size: 8
+  num_workers: 4
+  pin_memory: true
+  grad_clip: 1.0
+  eval_interval: 5           # evaluate every N epochs
+  save_interval: 10          # save checkpoint every N epochs
+  amp: false                 # automatic mixed precision
+
+# ── Output ───────────────────────────────────────────────────────────────────
+output:
+  save_dir: ./work_dirs/cityscapes_resnet50_uper
+  log_interval: 50           # log every N iterations
